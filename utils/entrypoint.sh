@@ -39,6 +39,10 @@ for domain in $LE_DOMAINS ; do
     DOMAINS_LIST="$DOMAIN_LIST -d $domain"
 done
 
+say "Running nginx in background"
+echo '' > /etc/nginx/ssl_params
+nginx 
+
 if [ ! -e $EXPECTED_CERTPATH ]; then
     say "Provisioning certificates from letsencrypt"
     certbot certonly $CERTBOT_FLAGS \
@@ -50,6 +54,8 @@ else
     say "Trying to renew certificates"
     certbot renew $CERTBOT_FLAGS --cert-name $CERT_NAME 
 fi
+
+nginx -s stop
 
 envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
 envsubst '$CERT_NAME' < /opt/utils/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
