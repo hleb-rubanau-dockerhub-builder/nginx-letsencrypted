@@ -57,4 +57,6 @@ chmod u+x /usr/local/bin/certbot_live_renew
 
 unset CERT_NAME EXPECTED_CERPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS
 
+say "certbot is done"
+
 exec $@
