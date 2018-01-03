@@ -87,6 +87,15 @@ render_template /opt/nginx-le/certbot_live_renew.sh > /usr/local/bin/certbot_liv
 chmod u+x /usr/local/bin/certbot_live_renew
 
 
+mkdir -p /etc/nginx/ssl
+if [ ! -e /etc/nginx/ssl/dhparam.pem ]; then
+  say "dpharam is missing, generating it (may take time)"
+  openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048 #4096
+  say "dhparam generated"
+fi
+
+
+
 deploy_ssl_configs
 EXPECTED_CERTPATH=/etc/letsencrypt/live/$CERT_NAME
 
