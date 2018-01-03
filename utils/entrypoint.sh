@@ -36,12 +36,16 @@ mkdir -p $CERTBOT_WEBROOT
 EXPECTED_CERTPATH=/etc/letsencrypt/live/$CERT_NAME
 DOMAINS_LIST=""
 for domain in $LE_DOMAINS ; do
-    DOMAINS_LIST="$DOMAIN_LIST -d $domain"
+    DOMAINS_LIST="$DOMAINS_LIST -d $domain"
 done
+
+say "DEBUG: LE_DOMAINS=$LE_DOMAINS"
+say "DEBUG: DOMAINS_LIST=$DOMAINS_LIST"
 
 
 if [ ! -e $EXPECTED_CERTPATH ]; then
     say "Provisioning certificates from letsencrypt"
+    # generate temporary config without SSL support (as certs are absent yet), but with proxying for ACME challenges
     envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template | grep -v ssl > /etc/nginx/ssl_params
     say "Running nginx in background"
     nginx
@@ -50,6 +54,7 @@ if [ ! -e $EXPECTED_CERTPATH ]; then
             --webroot -w $CERTBOT_WEBROOT \
             --cert-name $CERT_NAME        \
             $DOMAINS_LIST
+    # restore full config
     envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
 else
     say "Trying to renew certificates"
