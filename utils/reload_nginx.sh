@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec nginx -s reload
+kill -HUP $(cat /var/run/nginx.pid)

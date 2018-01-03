@@ -21,15 +21,15 @@ function require_var() {
 require_var LE_DOMAINS
 require_var LE_EMAIL
 
-CERTBOT_FLAGS="-n"
+export CERT_NAME="${CERT_NAME:-default}"
+export CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
+export CERTBOT_FLAGS="-n --cert-name $CERT_NAME"
 
 if [ ! "$LE_PROD" = "true" ]; then
     CERTBOT_FLAGS="$CERTBOT_FLAGS --test-cert"
     say "Using staging LE endpoint. Explicitly set up LE_PROD=true to switch to production"
 fi
 
-export CERT_NAME="${CERT_NAME:-default}"
-export CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
 
 mkdir -p $CERTBOT_WEBROOT
 
@@ -38,10 +38,6 @@ DOMAINS_LIST=""
 for domain in $LE_DOMAINS ; do
     DOMAINS_LIST="$DOMAINS_LIST -d $domain"
 done
-
-say "DEBUG: LE_DOMAINS=$LE_DOMAINS"
-say "DEBUG: DOMAINS_LIST=$DOMAINS_LIST"
-
 
 if [ ! -e $EXPECTED_CERTPATH ]; then
     say "Provisioning certificates from letsencrypt"
@@ -52,7 +48,6 @@ if [ ! -e $EXPECTED_CERTPATH ]; then
     certbot certonly $CERTBOT_FLAGS \
             --agree-tos -m $LE_EMAIL \
             --webroot -w $CERTBOT_WEBROOT \
-            --cert-name $CERT_NAME        \
             $DOMAINS_LIST
     # restore full config
     envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
@@ -60,12 +55,12 @@ else
     say "Trying to renew certificates"
     envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
     nginx
-    certbot renew $CERTBOT_FLAGS --cert-name $CERT_NAME 
+    certbot renew $CERTBOT_FLAGS 
 fi
 
 nginx -s stop
 
-envsubst '$CERT_NAME' < /opt/nginx-le/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
+envsubst '$CERTBOT_FLAGS $CERT_NAME' < /opt/nginx-le/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
 chmod u+x /usr/local/bin/certbot_live_renew
 
 unset CERT_NAME EXPECTED_CERPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS

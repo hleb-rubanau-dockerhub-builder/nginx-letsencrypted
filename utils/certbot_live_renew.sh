@@ -1,3 +1,3 @@
 #!/bin/bash
 
-exec certbot renew --post-hook reload_nginx --cert-name ${CERT_NAME} -n
+exec certbot renew ${CERTBOT_FLAGS} --post-hook reload_nginx $@
