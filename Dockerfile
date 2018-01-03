@@ -8,6 +8,9 @@ ENV LE_PROD=false
 
 RUN apt-get update && apt-get install -y certbot gettext-base
 
-ADD entrypoint.sh /entrypoint.sh
+ADD utils /opt/nginx-le
+RUN chmod u+x /opt/nginx-le/*.sh
+
 ADD ssl_params /usr/share/nginx/ssl_params.template
-ENTRYPOINT [ '/entrypoint.sh' ]
+
+ENTRYPOINT [ '/opt/nginx-le/entrypoint.sh' ]
