@@ -2,6 +2,9 @@ FROM nginx:latest
 
 MAINTAINER Hleb Rubanau <g.rubanau@gmail.com>
 
+
+# see https://github.com/moby/moby/issues/19611
+CMD ["nginx", "-g", "daemon off;"]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt
 ENV LE_PROD=false
