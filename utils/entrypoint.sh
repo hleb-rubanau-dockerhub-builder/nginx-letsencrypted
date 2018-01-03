@@ -40,7 +40,8 @@ for domain in $LE_DOMAINS ; do
 done
 
 say "Running nginx in background"
-echo '' > /etc/nginx/ssl_params
+envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
+envsubst '$CERT_NAME' < /opt/utils/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
 nginx 
 
 if [ ! -e $EXPECTED_CERTPATH ]; then
@@ -57,8 +58,6 @@ fi
 
 nginx -s stop
 
-envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
-envsubst '$CERT_NAME' < /opt/utils/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
 chmod u+x /usr/local/bin/certbot_live_renew
 
 unset CERT_NAME EXPECTED_CERPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS
