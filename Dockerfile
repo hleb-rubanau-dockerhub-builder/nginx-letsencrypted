@@ -13,4 +13,4 @@ RUN chmod u+x /opt/nginx-le/*.sh
 
 ADD ssl_params /usr/share/nginx/ssl_params.template
 
-ENTRYPOINT [ '/opt/nginx-le/entrypoint.sh' ]
+ENTRYPOINT [ "/opt/nginx-le/entrypoint.sh" ]

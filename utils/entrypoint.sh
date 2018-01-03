@@ -28,8 +28,8 @@ if [ ! "$LE_PROD" = "true" ]; then
     say "Using staging LE endpoint. Explicitly set up LE_PROD=true to switch to production"
 fi
 
-CERT_NAME="${CERT_NAME:-default}"
-CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
+export CERT_NAME="${CERT_NAME:-default}"
+export CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
 
 mkdir -p $CERTBOT_WEBROOT
 
@@ -41,7 +41,7 @@ done
 
 say "Running nginx in background"
 envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
-envsubst '$CERT_NAME' < /opt/utils/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
+envsubst '$CERT_NAME' < /opt/nginx-le/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
 nginx 
 
 if [ ! -e $EXPECTED_CERTPATH ]; then
