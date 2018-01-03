@@ -105,8 +105,14 @@ certbot certonly $CERTBOT_FLAGS \
     $DOMAINS_LIST
 
 say "Stopping nginx"
-nginx -s stop
+kill -TERM $(cat /var/run/nginx.pid) 
+#nginx -s stop
+while [ -f /var/run/nginx.pid ]; do
+  say "Waiting for nginx to shut down"
+  sleep 2;
+done
 
+say "Nginx stopped, enabling certs mode"
 enable_certs_mode
 nginx -t
 
