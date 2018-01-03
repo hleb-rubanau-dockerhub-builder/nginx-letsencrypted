@@ -40,31 +40,31 @@ for domain in $LE_DOMAINS ; do
 done
 
 if [ ! -e $EXPECTED_CERTPATH ]; then
-    say "Provisioning certificates from letsencrypt"
     # generate temporary config without SSL support (as certs are absent yet), but with proxying for ACME challenges
     envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template | grep -v ssl > /etc/nginx/ssl_params
-    say "Running nginx in background"
-    nginx
-    certbot certonly $CERTBOT_FLAGS \
-            --agree-tos -m $LE_EMAIL \
-            --webroot -w $CERTBOT_WEBROOT \
-            $DOMAINS_LIST
-    # restore full config
+else 
     envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
-else
-    say "Trying to renew certificates"
-    envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
-    nginx
-    certbot renew $CERTBOT_FLAGS 
 fi
 
+say "Running nginx in background"
+nginx
+say "Calling certbot"
+certbot certonly $CERTBOT_FLAGS \
+    --agree-tos -m $LE_EMAIL \
+    --webroot -w $CERTBOT_WEBROOT \
+    $DOMAINS_LIST
+
+say "Stopping nginx"
 nginx -s stop
 
+
+say "Actualizing ssl_params"
+envsubst '$CERTBOT_WEBROOT $CERT_NAME' < /usr/share/nginx/ssl_params.template > /etc/nginx/ssl_params
 envsubst '$CERTBOT_FLAGS $CERT_NAME' < /opt/nginx-le/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
 chmod u+x /usr/local/bin/certbot_live_renew
 
+say "Clean up environment"
 unset CERT_NAME EXPECTED_CERPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS
 
-say "certbot is done"
-say "now executing CMD: $@"
+say "Entrypoint is over, passing execution to CMD ($@)"
 exec "$@"
