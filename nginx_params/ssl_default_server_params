@@ -1,0 +1,3 @@
+    listen 443 ssl default_server;
+    include /etc/nginx/ssl_certificate_params ;
+    include /etc/nginx/acme_webroot_params ;

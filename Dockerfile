@@ -14,6 +14,6 @@ RUN apt-get update && apt-get install -y certbot gettext-base
 ADD utils /opt/nginx-le
 RUN chmod u+x /opt/nginx-le/*.sh && ln -s /opt/nginx-le/reload_nginx.sh /usr/local/bin/reload_nginx
 
-ADD ssl_params /usr/share/nginx/ssl_params.template
+ADD nginx_params /usr/share/nginx/nginx_params
 
 ENTRYPOINT [ "/opt/nginx-le/entrypoint.sh" ]
