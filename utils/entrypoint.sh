@@ -116,6 +116,9 @@ if [ "$CERT_NAME" = "snakeoil" ]; then
 
     if [ ! -s $CERTKEY ] || [ ! -s $CERTPEM ] ; then
         say "Generating snakeoil certs at $SSL_CERTPATH"
+       
+        DOMAINS_LIST=$(echo "$LE_DOMAINS" | sed -e 's/ /,DNS:/g' -e 's/^/DNS:/' )
+        PRIMARY_DOMAIN=$(echo "$LE_DOMAINS" | cut -f1 -d' ')
         
         CSRTEMPLATE=$(tempfile)
         cat > $CSRTEMPLATE <<CSR
@@ -128,31 +131,28 @@ distinguished_name = req_distinguished_name
  
 string_mask = utf8only
  
-req_extensions = v3_req
+req_extensions = v3_req,san
 
 [ v3_req ]
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
-subjectAltName = @alt_names
 
 [ req_distinguished_name ]
+OU=Self-Signed Certificates Department
 O=SPECTRE
 L=London
 C=UK
+CN=$PRIMARY_DOMAIN
+
+[san]
+subjectAltName=$DOMAINS_LIST
 CSR
 
-       domain_idx=0
-       for domain in $LE_DOMAINS ; do
-           domain_idx=$((domain_idx+1))
-           if [ "$domain_idx" = "1" ]; then for line in "CN=$domain" "" "[alt_names"] ; do echo $line >> $CSRTEMPLATE ; done ; fi
-    
-           echo "DNS.$domain_idx = $domain" >> $CSRTEMPLATE
-       done
 
        say "DEBUG: contents of CSRTEMPLATE"
        cat $CSRTEMPLATE
 
-       openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout $CERTKEY -out $CERTPEM -config $CSRTEMPLATE
+       openssl req -x509 -nodes -days 3650 -newkey rsa:2048 -keyout $CERTKEY -out $CERTPEM -reqexts san -extensions san -config $CSRTEMPLATE
 
        rm $CSRTEMPLATE
 
