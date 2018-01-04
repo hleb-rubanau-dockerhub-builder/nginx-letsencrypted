@@ -12,9 +12,6 @@ ENV LE_PROD=false
 
 RUN sed -i -e '/conf.d/i       ssl_dhparam /etc/nginx/ssl/dhparam.pem ; '  /etc/nginx/nginx.conf
 
-RUN mkdir -p /var/log/letsencrypt \
-    && ln -sf /dev/stderr /var/log/letsencrypt/letsencrypt.log 
-
 ADD utils /opt/nginx-le
 RUN chmod u+x /opt/nginx-le/*.sh && ln -s /opt/nginx-le/reload_nginx.sh /usr/local/bin/reload_nginx
 
