@@ -101,22 +101,29 @@ function get_domains_from_configs() {
 		| tr ' ' '\n' | grep -v '^$' | sort | uniq
 }
 
+function deduplicate_list() {
+    perl -e ' %seen= {} ; my @result; foreach $elem (@ARGV) { if(!$seen{$elem}){ push @result, $elem; } ; $seen{$elem}=1; }; print join(" ", @result)."\n"; ' $* 
+}
+
 require_var PRIMARY_DOMAIN
 require_var LE_EMAIL
 
 # extra domains could be defined
 if [ "$AUTOFILL_DOMAINS" = "true" ]; then
+  say "Autofilling extra domains from nginx configs (to disable this behaviour, set AUTOFILL_DOMAINS=false)"
   for domain in $( get_domains_from_configs ) ; do
     if [ -z "$EXTRA_DOMAINS" ]; then 
       EXTRA_DOMAINS=$domain
-    else:
+    else
       EXTRA_DOMAINS="$EXTRA_DOMAINS $domain"
     fi
   done
+else
+  say "Ignoring server_name's in nginx configs; to automatically add them, set AUTOFILL_DOMAINS=true"
 fi
 
 if [ ! -z "$EXTRA_DOMAINS" ]; then
-  LE_DOMAINS="$PRIMARY_DOMAIN $EXTRA_DOMAINS"
+  LE_DOMAINS=$( deduplicate_list $PRIMARY_DOMAIN $EXTRA_DOMAINS )
 else 
   LE_DOMAINS=$PRIMARY_DOMAIN
 fi
