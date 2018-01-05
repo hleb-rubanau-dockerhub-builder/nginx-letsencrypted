@@ -25,7 +25,7 @@ pipeline {
                 script {
                     newimage = docker.build(env.TARGET_IMAGE_TAG)
 
-                    withDockerRegistry([credentialsId: env.REGISTRY_CREDENTIALS_ID, url: "https://"+env.PRIVATE_REGISTRY_URL]) {
+                    withDockerRegistry([credentialsId: env.REGISTRY_CREDENTIALS_ID, url: env.PRIVATE_REGISTRY_URL]) {
                         newimage.push('latest')
                         newimage.push(env.GIT_TAG)
                         newimage.push(env.BRANCH_TAG)
