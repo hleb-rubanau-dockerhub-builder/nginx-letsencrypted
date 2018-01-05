@@ -101,9 +101,6 @@ function get_domains_from_configs() {
 		| tr ' ' '\n' | grep -v '^$' | sort | uniq
 }
 
-function deduplicate_list() {
-}
-
 require_var PRIMARY_DOMAIN
 require_var LE_EMAIL
 
