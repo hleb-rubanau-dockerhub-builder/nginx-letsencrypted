@@ -14,7 +14,7 @@ pipeline {
         // convention
         REGISTRY_CREDENTIALS_ID="$TARGET_REGISTRY"
 
-        TARGET_IMAGE_TAG="$TARGET_IMAGE:git_$GIT_TAG"
+        TARGET_IMAGE_TAG="$PRIVATE_REGISTRY_URL/$TARGET_IMAGE:git_$GIT_TAG"
     }
 
     stages {
