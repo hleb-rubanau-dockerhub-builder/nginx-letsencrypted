@@ -23,12 +23,12 @@ pipeline {
                 sh 'docker pull $BASE_IMAGE'
 
                 script {
-                    newimage = docker.build($TARGET_IMAGE_TAG)
+                    newimage = docker.build(env.TARGET_IMAGE_TAG)
 
-                    withDockerRegistry([credentialsId: env.REGISTRY_CREDENTIALS_ID, url: "https://$PRIVATE_REGISTRY_URL"]) {
+                    withDockerRegistry([credentialsId: env.REGISTRY_CREDENTIALS_ID, url: "https://"+env.PRIVATE_REGISTRY_URL]) {
                         newimage.push('latest')
-                        newimage.push("$GIT_TAG")
-                        newimage.push("$BRANCH_TAG")
+                        newimage.push(env.GIT_TAG)
+                        newimage.push(env.BRANCH_TAG)
                     }
                 }
 
