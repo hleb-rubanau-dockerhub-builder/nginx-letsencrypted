@@ -16,7 +16,11 @@ pipeline {
         }
         stage('Tag') {
             steps {
-                sh 'for extra tag in $GIT_BRANCH latest ; do docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$tag ; done '
+                sh '''#!/bin/bash
+                      for extra_tag in $GIT_BRANCH latest ; do 
+                         docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$extra_tag ;
+                      done 
+                   '''
             }
         }
         stage('Push') {
