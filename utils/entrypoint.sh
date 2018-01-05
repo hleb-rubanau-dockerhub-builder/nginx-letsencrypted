@@ -64,6 +64,38 @@ function enforce_webroot_only_mode() {
     done
 }
 
+function enable_ssl_stapling() {
+   say "Enabling SSL stapling"
+   cat /usr/share/nginx/nginx_params/ssl_stapling_params > /etc/nginx/ssl_stapling_params ;
+}
+
+function disable_ssl_stapling() {
+   say "Disabling SSL stapling"
+   sed -e 's/on/off/g' /usr/share/nginx/nginx_params/ssl_stapling_params > /etc/nginx/ssl_stapling_params ;
+}
+
+function enable_dhparam() {
+   say "Enabling ssl_dhparam"
+   sed -i -e 's/#ssl_dhparam/ssl_dhparam/' /etc/nginx/nginx.conf
+}
+
+function disable_dhparam() {
+   say "Disabling ssl_dhparam"
+   sed -i -e 's/^ssl_dhparam/#ssl_dhparam/' /etc/nginx/nginx.conf 
+}
+
+function initialize_dhparam_pem() {
+	mkdir -p /etc/nginx/ssl
+	if [ ! -e /etc/nginx/ssl/dhparam.pem ]; then
+	  say "dpharam is missing, generating it (may take time)"
+	  openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048 #4096
+	  say "dhparam generated"
+	else
+	  say "dhparam is already in place, not regenerating it"
+	fi
+}
+
+
 require_var LE_DOMAINS
 require_var LE_EMAIL
 
@@ -97,20 +129,14 @@ fi
 
 chmod u+x /usr/local/bin/certbot_live_renew
 
-mkdir -p /etc/nginx/ssl
-if [ ! -e /etc/nginx/ssl/dhparam.pem ]; then
-  say "dpharam is missing, generating it (may take time)"
-  openssl dhparam -out /etc/nginx/ssl/dhparam.pem 2048 #4096
-  say "dhparam generated"
-else
-  say "dhparam is already in place, not regenerating it"
-fi
-
 deploy_ssl_configs
 
 if [ "$CERT_NAME" = "snakeoil" ]; then
     CERTKEY=$SSL_CERTPATH/privkey.pem
     CERTPEM=$SSL_CERTPATH/fullchain.pem
+
+    disable_ssl_stapling
+    disable_dhparam
 
     mkdir -p $SSL_CERTPATH
 
@@ -156,10 +182,21 @@ CSR
 
        rm $CSRTEMPLATE
 
+
     else
        say "Not provisioning snakeoil certs"
     fi
+       
+    if [ ! -e $SSL_CERTPATH/chain.pem ]; then
+        cd $SSL_CERTPATH ;
+	ln -sf fullchain.pem chain.pem
+        cd -
+    fi
 else
+
+    enable_ssl_stapling
+    enable_dhparam
+    initialize_dhparam_pem
 
     say "Provision/update letsencrypt certs ($CERT_MODE)"
 	if [ ! -e $SSL_CERTPATH ]; then
