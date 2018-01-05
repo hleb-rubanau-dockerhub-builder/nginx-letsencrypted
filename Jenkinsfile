@@ -19,7 +19,8 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                       set -e 
-                      for extra_tag in $GIT_BRANCH latest ; do 
+                      BRANCH_TAG=$(echo "$GIT_BRANCH" | grep -o '[^/]*$')
+                      for extra_tag in $BRANCH_TAG latest ; do 
                          docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$extra_tag ;
                       done 
                    '''
