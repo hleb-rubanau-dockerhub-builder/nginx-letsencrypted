@@ -4,7 +4,7 @@ pipeline {
     environment {
         BASE_IMAGE="nginx:latest"
         TARGET_IMAGE="hleb/nginx-letsencrypt"
-        TARGET_IMAGE_TAG=$TARGET_IMAGE:git_$GIT_COMMIT
+        TARGET_IMAGE_TAG="$TARGET_IMAGE:git_$GIT_COMMIT"
     }
 
     stages {
