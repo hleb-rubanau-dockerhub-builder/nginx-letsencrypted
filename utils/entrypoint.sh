@@ -95,10 +95,36 @@ function initialize_dhparam_pem() {
 	fi
 }
 
+function get_domains_from_configs() {
+	grep server_name /etc/nginx/conf.d/* | cut -f2 -d: \
+		| sed -e 's/;//g' -e 's/server_name//g' -e 's/\s*//g' \
+		| tr ' ' '\n' | grep -v '^$' | sort | uniq
+}
 
-require_var LE_DOMAINS
+function deduplicate_list() {
+}
+
+require_var PRIMARY_DOMAIN
 require_var LE_EMAIL
 
+# extra domains could be defined
+if [ "$AUTOFILL_DOMAINS" = "true" ]; then
+  for domain in $( get_domains_from_configs ) ; do
+    if [ -z "$EXTRA_DOMAINS" ]; then 
+      EXTRA_DOMAINS=$domain
+    else:
+      EXTRA_DOMAINS="$EXTRA_DOMAINS $domain"
+    fi
+  done
+fi
+
+if [ ! -z "$EXTRA_DOMAINS" ]; then
+  LE_DOMAINS="$PRIMARY_DOMAIN $EXTRA_DOMAINS"
+else 
+  LE_DOMAINS=$PRIMARY_DOMAIN
+fi
+
+say "Full domain list: $LE_DOMAINS"
 
 export CERT_MODE=${CERT_MODE:-staging}
 export CERT_NAME="${CERT_NAME:-default}"
@@ -144,7 +170,6 @@ if [ "$CERT_NAME" = "snakeoil" ]; then
         say "Generating snakeoil certs at $SSL_CERTPATH"
        
         DOMAINS_LIST=$(echo "$LE_DOMAINS" | sed -e 's/ /,DNS:/g' -e 's/^/DNS:/' )
-        PRIMARY_DOMAIN=$(echo "$LE_DOMAINS" | cut -f1 -d' ')
         
         CSRTEMPLATE=$(tempfile)
         cat > $CSRTEMPLATE <<CSR

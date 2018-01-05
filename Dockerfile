@@ -8,7 +8,7 @@ RUN apt-get update && apt-get install -y certbot gettext-base
 CMD ["nginx", "-g", "daemon off;"]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt /etc/nginx/ssl
-ENV LE_PROD=false
+ENV LE_PROD=false AUTOFILL_DOMAINS=false
 
 RUN sed -i -e '/conf.d/i       ssl_dhparam /etc/nginx/ssl/dhparam.pem ; '  /etc/nginx/nginx.conf
 
