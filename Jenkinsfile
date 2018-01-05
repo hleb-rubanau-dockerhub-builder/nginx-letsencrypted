@@ -4,7 +4,8 @@ pipeline {
     environment {
         BASE_IMAGE="nginx:latest"
         TARGET_IMAGE="hleb/nginx-letsencrypt"
-        TARGET_IMAGE_TAG="$TARGET_IMAGE:git_$GIT_COMMIT"
+        GIT_TAG="$GIT_COMMIT".take(8)
+        TARGET_IMAGE_TAG="$TARGET_IMAGE:git_$GIT_TAG"
     }
 
     stages {
@@ -17,6 +18,7 @@ pipeline {
         stage('Tag') {
             steps {
                 sh '''#!/bin/bash
+                      set -e 
                       for extra_tag in $GIT_BRANCH latest ; do 
                          docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$extra_tag ;
                       done 
