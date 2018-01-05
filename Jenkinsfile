@@ -8,17 +8,21 @@ pipeline {
     }
 
     stages {
-        stage('Pull') {
-            sh 'docker pull $BASE_IMAGE'
-        }
         stage('Build') {
-            sh 'docker build -t $TARGET_IMAGE_TAG .'
+            steps {
+                sh 'docker pull $BASE_IMAGE'
+                sh 'docker build -t $TARGET_IMAGE_TAG .'
+            }
         }
         stage('Tag') {
-            sh 'for extra tag in $GIT_BRANCH latest ; do docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$tag ; done '
+            steps {
+                sh 'for extra tag in $GIT_BRANCH latest ; do docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$tag ; done '
+            }
         }
         stage('Push') {
-            sh 'docker push $TARGET_IMAGE'
+            steps {
+                sh 'docker push $TARGET_IMAGE'
+            }
         }
     }
 }
