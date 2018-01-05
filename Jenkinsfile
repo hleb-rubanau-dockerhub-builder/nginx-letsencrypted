@@ -4,7 +4,16 @@ pipeline {
     environment {
         BASE_IMAGE="nginx:latest"
         TARGET_IMAGE="hleb/nginx-letsencrypt"
+
+        DEFAULT_TAG='latest'
         GIT_TAG="$GIT_COMMIT".take(8)
+
+        TARGET_REGISTRY="$PRIVATE_REGISTRY_HOSTNAME"
+        PRIVATE_REGISTRY_URL ="$TARGET_REGISTRY:$PRIVATE_REGISTRY_PORT"
+
+        // convention
+        REGISTRY_CREDENTIALS_ID=$TARGET_REGISTRY
+
         TARGET_IMAGE_TAG="$TARGET_IMAGE:git_$GIT_TAG"
     }
 
@@ -12,23 +21,15 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'docker pull $BASE_IMAGE'
-                sh 'docker build -t $TARGET_IMAGE_TAG .'
-            }
-        }
-        stage('Tag') {
-            steps {
-                sh '''#!/bin/bash
-                      set -e 
-                      BRANCH_TAG=$(echo "$GIT_BRANCH" | grep -o '[^/]*$')
-                      for extra_tag in $BRANCH_TAG latest ; do 
-                         docker tag $TARGET_IMAGE_TAG $TARGET_IMAGE:$extra_tag ;
-                      done 
-                   '''
-            }
-        }
-        stage('Push') {
-            steps {
-                sh 'docker push $TARGET_IMAGE'
+
+                newimage = docker.build($TARGET_IMAGE_TAG)
+
+                withDockerRegistry([credentialsId: env.REGISTRY_CREDENTIALS_ID, url: "https://$PRIVATE_REGISTRY_URL"']) {
+                    newimage.push('latest')
+                    newimage.push("$GIT_TAG")
+                    newimage.push("$BRANCH_TAG")
+                }
+
             }
         }
     }
