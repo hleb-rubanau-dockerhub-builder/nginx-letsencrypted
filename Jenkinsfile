@@ -19,6 +19,7 @@ pipeline {
 
     stages {
         stage('Build') {
+
             steps {
                 sh 'docker pull $BASE_IMAGE'
 
