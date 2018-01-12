@@ -142,7 +142,7 @@ if [ "$CERT_MODE" = 'snakeoil' ]; then
 
 else
 
-    export CERTBOT_FLAGS="-n --cert-name $CERT_NAME"
+    export CERTBOT_FLAGS="-n --cert-name $CERT_NAME --expand "
 
     if [ ! "$CERT_MODE" = "prod" ]; then
         say "Using staging LE endpoint. Explicitly set up CERT_MODE=prod to switch to production"
