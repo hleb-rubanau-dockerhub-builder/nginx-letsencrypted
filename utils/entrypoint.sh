@@ -237,14 +237,15 @@ else
     DOMAINS_LIST=""
     for domain in $LE_DOMAINS ; do DOMAINS_LIST="$DOMAINS_LIST -d $domain" ; done
 
-	say "Running nginx in background"
-	nginx
-	say "Calling certbot"
+    nginx -t || die "Nginx misconfiguration"
+    say "Running nginx in background"
+    nginx
+    say "Calling certbot"
     
-	certbot certonly $CERTBOT_FLAGS \
-	    --agree-tos -m $LE_EMAIL \
-	    --webroot -w $CERTBOT_WEBROOT \
-	    $DOMAINS_LIST
+    certbot certonly $CERTBOT_FLAGS \
+        --agree-tos -m $LE_EMAIL \
+        --webroot -w $CERTBOT_WEBROOT \
+        $DOMAINS_LIST
 
 	say "Stopping nginx"
 	kill -TERM $(cat /var/run/nginx.pid) 
