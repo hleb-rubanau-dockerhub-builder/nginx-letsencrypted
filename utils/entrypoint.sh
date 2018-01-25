@@ -97,8 +97,8 @@ function initialize_dhparam_pem() {
 
 function get_domains_from_configs() {
 	grep server_name /etc/nginx/conf.d/* | cut -f2 -d: \
-		| sed -e 's/;//g' -e 's/server_name//g' -e 's/\s*//g' \
-		| tr ' ' '\n' | grep -v '^$' | sort | uniq
+		| sed -e 's/;//g' -e 's/server_name//g' -e 's/\s+/ /g' \
+		| tr ' ' '\n' | grep -v '^$' | grep -v '*.' | sort | uniq
 }
 
 function deduplicate_list() {
