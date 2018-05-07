@@ -1,7 +1,9 @@
 #!/bin/bash
 
 function get_domains_from_configs() {
-	grep server_name /etc/nginx/conf.d/* | cut -f2 -d: \
+	( grep server_name /etc/nginx/conf.d/* 2>/dev/null || true )\
+        | egrep -v '^\s+#'  \
+        | cut -f2 -d: \
 		| sed -e 's/;//g' -e 's/server_name//g' -e 's/\s+/ /g' \
 		| tr ' ' '\n' | grep -v '^$' | grep -v '*.' | sort | uniq
 }

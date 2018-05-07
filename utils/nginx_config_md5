@@ -1,0 +1,9 @@
+#!/bin/bash
+
+
+FILES_LIST="/etc/nginx/conf.d/*.conf /etc/nginx/nginx.conf /etc/nginx/ssl_stapling_params /etc/nginx/ssl_params $SSL_CERT_PEMFILE $SSL_CERT_KEYFILE"
+function calculate_md5() {
+    ( cat $FILES_LIST 2>/dev/null || true ) | md5sum
+}
+
+echo "$( date '+%F %T' ) @$( calculate_md5 )" 

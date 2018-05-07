@@ -1,0 +1,48 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+source /usr/local/share/helper_functions.sh
+source $(dirname $BASH_SOURCE[0])/determine_cert_paths
+source $(dirname $BASH_SOURCE[0])/determine_cert_writeability
+
+# whether certificate needs to be generated
+# whether certificate needs to be regenerated (desynchronized)
+# whether certificate needs to be updated (i.e. if outdated)
+# whether certificate is ok
+# whether we should blindly reuse
+
+# 3600 days
+function snakeoil_cert_is_outdated() {  
+    check_file_params $( readlink -m $SSL_CERT_PEMFILE ) -mtime +3600 
+}
+
+# 55 days
+function letsencrypt_cert_is_outdated() {
+    check_file_params $( readlink -m $SSL_CERT_PEMFILE ) -mtime +55
+}
+
+function report_ssl_cert_status() {
+    report_ssl_vars
+    report_ssl_writeability
+    report_vars SSL_CERT_STATUS
+}
+
+
+if [ "$SSL_FILES_ARE_PRESENT" != "true" ]; then
+    export SSL_CERT_STATUS="missing"
+elif [ "$SSL_CERT_MODE" = "snakeoil" ] && snakeoil_cert_is_outdated ; then
+    export SSL_CERT_STATUS="outdated"
+elif letsencrypt_cert_is_outdated ; then
+    export SSL_CERT_STATUS="outdated"
+else
+    export SSL_CERT_STATUS="actual"
+fi
+
+# TODO: analyze domains list and mark certificate as desynced if it does not match desired domains (although it may involve grace period)
+
+
+# shortcut for debugging
+if [ "$0" = "$BASH_SOURCE" ]; then
+    report_ssl_cert_status
+fi

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 CERTBOT_FLAGS="-n" 
-if [ "$CERT_MODE" != "prod" ]; then
+if [ "$SSL_CERT_MODE" != "prod" ]; then
     CERTBOT_FLAGS="$CERTBOT_FLAGS --test-cert "
 fi
 

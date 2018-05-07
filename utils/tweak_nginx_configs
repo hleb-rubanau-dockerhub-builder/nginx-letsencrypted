@@ -1,0 +1,95 @@
+#!/bin/bash
+
+set -e 
+set -o pipefail
+
+source /usr/local/share/helper_functions.sh
+
+CONFIG_ENDPOINTS="ssl_params ssl_default_server_params"
+
+function render_template() {
+    TEMPLATE_PATH=$1 
+    if [ -z "$TEMPLATE_PATH" ]; then die "Template name not provided" ; fi
+    if [ ! -e "$TEMPLATE_PATH" ]; then die "Template not found: $TEMPLATE_PATH" ; fi
+
+    envsubst '$CERTBOT_WEBROOT $CERTBOT_FLAGS $SSL_CERT_PATH $SSL_CERT_NAME $SSL_CERT_PEMFILE $SSL_CERT_KEYFILE $SSL_CERT_CHAINFILE' < $TEMPLATE_PATH
+}
+
+function path_to_ssl_disabled_config() {
+    echo /etc/nginx/ssl_disabled_$1
+}
+
+function path_to_ssl_enabled_config() {
+    echo /etc/nginx/ssl_enabled_$1
+}
+
+function deploy_ssl_configs() {
+    for template in /usr/share/nginx/nginx_params/* ; do
+	tname=$(basename $template)
+        destpath=/etc/nginx/$tname
+        say "Rendering $template -> $destpath"
+	    # to ensure there's no remaining links
+	    rm -f $destpath 
+        render_template $template > $destpath
+    done
+
+    for config_endpoint in $CONFIG_ENDPOINTS ; do
+       mv /etc/nginx/$config_endpoint $( path_to_ssl_enabled_config $config_endpoint )
+       ln -sf /etc/nginx/acme_webroot_params $( path_to_ssl_disabled_config $config_endpoint )
+    done
+}
+
+function enable_certs_mode() {
+    for config_endpoint in $CONFIG_ENDPOINTS ; do
+      ln -sfv $( path_to_ssl_enabled_config $config_endpoint )  /etc/nginx/$config_endpoint 
+    done
+}
+
+function enforce_webroot_only_mode() {
+    for config_endpoint in $CONFIG_ENDPOINTS ; do
+      ln -sfv $( path_to_ssl_disabled_config $config_endpoint ) /etc/nginx/$config_endpoint 
+    done
+}
+
+function enable_ssl_stapling() {
+   say "Enabling SSL stapling"
+   cat /usr/share/nginx/nginx_params/ssl_stapling_params > /etc/nginx/ssl_stapling_params ;
+}
+
+function disable_ssl_stapling() {
+   say "Disabling SSL stapling"
+   sed -e 's/on/off/g' /usr/share/nginx/nginx_params/ssl_stapling_params > /etc/nginx/ssl_stapling_params ;
+}
+
+function enable_dhparam() {
+   say "Enabling ssl_dhparam"
+   sed -i -e 's/#ssl_dhparam/ssl_dhparam/' /etc/nginx/nginx.conf
+}
+
+function disable_dhparam() {
+   say "Disabling ssl_dhparam"
+   sed -i -e 's/^ssl_dhparam/#ssl_dhparam/' /etc/nginx/nginx.conf 
+}
+
+function force_snakeoil_mode() {
+    deploy_ssl_configs
+    disable_ssl_stapling
+    disable_dhparam
+    enable_certs_mode
+}
+
+function force_letsencrypt_mode() {
+    initialize_dhparam_pem  # external script
+    deploy_ssl_configs
+    enable_ssl_stapling
+    enable_dhparam
+    enable_certs_mode
+}
+
+subcommands=$*
+
+for subcommand in $subcommands ; do
+    # we simply assume it to be the name of the function
+    say "TWEAK NGINX: $subcommand"
+    $subcommand
+done

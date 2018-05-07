@@ -1,0 +1,57 @@
+#!/bin/bash
+
+set -e 
+set -o pipefail
+
+source /usr/local/share/helper_functions.sh
+
+source $(dirname $BASH_SOURCE[0])/determine_cert_paths
+
+
+function before_exit() {
+  nginx_shutdown.sh 	
+  tweak_nginx_configs enable_certs_mode
+}
+
+PRIMARY_DOMAIN=$1
+shift
+# reformat remaining arguments list into comma-separated with DNS: prefix
+REQUESTED_DOMAINS_LIST="$*"
+DOMAINS_LIST=""
+for domain in $REQUESTED_DOMAINS_LIST ; do DOMAINS_LIST="$DOMAINS_LIST -d $domain" ; done
+
+require_vars PRIMARY_DOMAIN LE_EMAIL
+export CERTBOT_FLAGS="$( get_certbot_flags.sh ) --cert-name $SSL_CERT_NAME --expand"
+       
+# we assume nginx is NOT running, and may want to run it in a special mode
+if [ "$SSL_CERT_STATUS" = "missing" ]; then 
+    tweak_nginx_configs enforce_webroot_only_mode
+fi    
+
+# TODO: survive if nginx is already running
+say "Running nginx in background"
+nginx
+
+if test_acme.sh ; then
+        say "LETSENCRYPT: Calling certbot"
+        set -x
+        certbot certonly $CERTBOT_FLAGS \
+            --agree-tos -m $LE_EMAIL \
+            --webroot -w $CERTBOT_WEBROOT \
+            $DOMAINS_LIST   \
+        || CERTBOT_FAILED="yes"
+        set +x
+else 
+    say "LETSENCRYPT ERROR: pre-test of acme changes discovered errors"
+    before_exit
+    die "ACME pre-test failed; most likely your nginx drop-ins are misconfigured"
+fi
+    
+if [ "$CERTBOT_FAILED" = "yes" ]; then
+    echo "[$(date +%F-%T)] Letsencrypt generation FAILURE (mode=$SSL_CERT_MODE, domains: $REQUESTED_DOMAINS_LIST )" \
+       | tee -a $LETSENCRYPT_FAILURE_LOG_FILE >&2
+fi
+
+before_exit
+
+if [ "$CERTBOT_FAILED" = "yes" ]; then die "Letsencrypt generation failed" ; fi

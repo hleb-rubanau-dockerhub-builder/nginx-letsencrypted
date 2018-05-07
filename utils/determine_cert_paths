@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+source /usr/local/share/helper_functions.sh
+
+function report_ssl_vars() {
+    report_vars SSL_CERT_MODE SSL_CERT_NAME SSL_CERT_PATH SSL_CERT_PEMFILE SSL_CERT_KEYFILE
+    if [ "$SSL_CERT_MODE" != "snakeoil" ]; then 
+        report_vars CERTBOT_WEBROOT
+    fi
+}
+
+# just a constant, but it is a convenient place    
+export CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
+
+[ "$SSL_CERT_MODE" = "snakeoil" ] || [ "$SSL_CERT_MODE" = "prod" ] || export SSL_CERT_MODE=staging
+export SSL_CERT_MODE
+
+if [ "$SSL_CERT_MODE" = "snakeoil" ]; then
+    export SSL_CERT_NAME=snakeoil
+    export SSL_CERT_PATH=/etc/nginx/ssl/$SSL_CERT_NAME
+else
+    export SSL_CERT_NAME=${SSL_CERT_MODE}
+    export SSL_CERT_PATH=/etc/letsencrypt/live/$SSL_CERT_NAME
+fi
+
+export SSL_CERT_PEMFILE=$SSL_CERT_PATH/fullchain.pem
+export SSL_CERT_KEYFILE=$SSL_CERT_PATH/privkey.pem
+export SSL_CERT_CHAINFILE=$SSL_CERT_PATH/chain.pem
+
+if [ "$(basename $0)" = "determine_cert_paths" ]; then
+   report_ssl_vars
+fi

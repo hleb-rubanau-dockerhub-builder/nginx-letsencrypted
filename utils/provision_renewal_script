@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+source /usr/local/share/helper_functions.sh
+
+CERT_MODE=${1:-$CERT_MODE}
+require_var CERT_MODE
+
+if [ "$CERT_MODE" = "snakeoil" ]; then
+    echo "#!/bin/bash\necho 'Certificate renewal is not supported in snakeoil mode. Change CERT_MODE to use letsencrypt. Bye.';\n" > /usr/local/bin/certbot_live_renew
+else 
+    envsubst '$CERTBOT_FLAGS' < /usr/local/bin/certbot_live_renew.sh > /usr/local/bin/certbot_live_renew
+fi
+
+chmod u+x /usr/local/bin/certbot_live_renew

@@ -1,0 +1,5 @@
+1. NOT CONFIRMED dhparam Not regenerated
+2. FIXED letsencrypt creates wrong certificate
+3. Most likely, on update/regenerate certbot flags will be wrong (as they are already expanded at bootstrap)
+
+4. On regeneration, false alert about letsencrypt failures is raised. It is also self-locking as error is recorded into same failures log

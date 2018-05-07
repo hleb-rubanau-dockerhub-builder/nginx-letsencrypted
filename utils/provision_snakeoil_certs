@@ -1,0 +1,67 @@
+#!/bin/bash
+
+set -e 
+set -o pipefail
+
+source /usr/local/share/helper_functions.sh
+
+export SSL_CERT_MODE='snakeoil'
+source $(dirname $BASH_SOURCE[0])/determine_cert_paths
+
+PRIMARY_DOMAIN=$1
+shift
+# reformat remaining arguments list into comma-separated with DNS: prefix
+DOMAINS_LIST=$(echo "$*" | sed -e 's/ /,DNS:/g' -e 's/^/DNS:/' ) 
+
+require_var PRIMARY_DOMAIN 
+        
+say "Generating snakeoil certs at $SSL_CERT_PATH"
+require_vars SNAKEOIL_COMPANY_DEPT SNAKEOIL_COMPANY_NAME SNAKEOIL_COMPANY_CITY SNAKEOIL_COMPANY_COUNTRY PRIMARY_DOMAIN
+
+CSRTEMPLATE=$(tempfile)
+cat > $CSRTEMPLATE <<CSR
+[ req ]
+prompt = no
+default_bits = 2048
+default_keyfile = privkey.pem
+encrypt_key = no
+distinguished_name = req_distinguished_name
+ 
+string_mask = utf8only
+ 
+req_extensions = v3_req,san
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+[ req_distinguished_name ]
+OU=$SNAKEOIL_COMPANY_DEPT
+O=$SNAKEOIL_COMPANY_NAME
+L=$SNAKEOIL_COMPANY_CITY
+C=$SNAKEOIL_COMPANY_COUNTRY
+CN=$PRIMARY_DOMAIN
+
+[san]
+subjectAltName=$DOMAINS_LIST
+CSR
+
+
+say "Generating snakeoil certs with following SAN: $DOMAINS_LIST"
+mkdir -p $(dirname $SSL_CERT_PEMFILE ) 
+
+#rm -f $SSL_CERT_KEYFILE $SSL_CERT_PEMFILE
+
+openssl req -x509 -nodes -days 3650 -newkey rsa:2048 \
+        -keyout $SSL_CERT_KEYFILE                    \
+        -out $SSL_CERT_PEMFILE                       \
+        -reqexts san -extensions san                 \
+        -config $CSRTEMPLATE
+
+rm $CSRTEMPLATE
+
+if [ ! -e $SSL_CERT_PATH/chain.pem ]; then
+    cd $SSL_CERT_PATH ;
+    ln -sf fullchain.pem chain.pem
+    cd -
+fi
