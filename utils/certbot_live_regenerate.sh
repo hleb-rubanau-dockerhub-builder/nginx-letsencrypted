@@ -12,7 +12,7 @@ export CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
 export SSL_CERTPATH=/etc/letsencrypt/live/$CERT_NAME
 
  
-if [ "$CERT_NAME" = "snakeoil" ]; then
+if [ "$CERT_MODE" = "snakeoil" ]; then
     echo "Snakeoil mode, doing nothing"
     exit;
 fi
