@@ -13,6 +13,11 @@ function die() {
     exit 1;
 }
 
+function check_file_params() {
+    result="$(find $* 2>/dev/null || true)"
+    [ ! -z "$result" ]
+}
+
 function require_var() {
     varname=$1
     if [ -z "${!varname}" ]; then
@@ -105,6 +110,25 @@ function deduplicate_list() {
     perl -e ' %seen= {} ; my @result; foreach $elem (@ARGV) { if(!$seen{$elem}){ push @result, $elem; } ; $seen{$elem}=1; }; print join(" ", @result)."\n"; ' $* 
 }
 
+export LETSENCRYPT_FAILURES_LOG_FILE=/etc/letsencrypt/failures.log
+# if failure was tracked during grace period
+function letsencrypt_failed_recently() {
+    check_file_params $LETSENCRYPT_FAILURES_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
+}
+
+ORIGINAL_CMD=$0
+ORIGINAL_PARAMS=$@
+
+function maybe_failover_to_snakeoil() {
+    if [ "$LETSENCRYPT_FAILOVER_TO_SNAKEOIL" == "yes" ] || [ "$LETSENCRYPT_FAILOVER_TO_SNAKEOIL" == "true" ]; then
+        if [ "$CERT_MODE" != "snakeoil" ]; then
+            say "WARNING: forcibly switching from $CERT_MODE to snakeoil mode"
+            export CERT_MODE=snakeoil
+            exec $ORIGINAL_CMD $ORIGINAL_PARAMS
+        fi
+    fi
+}
+
 require_var PRIMARY_DOMAIN
 require_var LE_EMAIL
 
@@ -193,10 +217,10 @@ basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 
 [ req_distinguished_name ]
-OU=Self-Signed Certificates Department
-O=SPECTRE
-L=London
-C=UK
+OU=$SNAKEOIL_COMPANY_DEPT
+O=$SNAKEOIL_COMPANY_NAME
+L=$SNAKEOIL_COMPANY_CITY
+C=$SNAKEOIL_COMPANY_COUNTRY
 CN=$PRIMARY_DOMAIN
 
 [san]
@@ -213,7 +237,7 @@ CSR
 
 
     else
-       say "Not provisioning snakeoil certs"
+       say "Not provisioning snakeoil certs as they already exist"
     fi
        
     if [ ! -e $SSL_CERTPATH/chain.pem ]; then
@@ -221,6 +245,12 @@ CSR
 	ln -sf fullchain.pem chain.pem
         cd -
     fi
+elif [ ! -w /etc/letsencrypt ]; then
+    say "WARNING: /etc/letsencrypt is likely mounted in RO mode, doing nothing with certs"
+    maybe_failover_to_snakeoil
+elif [ -e $LETSENCRYPT_FAILURES_LOG_FILE ] && letsencrypt_failed_recently ; then
+    say "WARNING: letsencrypt recently failed, doing nothing until grace period ($LETSENCRYPT_FAILURE_GRACE_PERIOD minutes) is over"
+    maybe_failover_to_snakeoil
 else
 
     enable_ssl_stapling
@@ -245,7 +275,14 @@ else
     certbot certonly $CERTBOT_FLAGS \
         --agree-tos -m $LE_EMAIL \
         --webroot -w $CERTBOT_WEBROOT \
-        $DOMAINS_LIST
+        $DOMAINS_LIST   \
+    || CERTBOT_FAILED="yes"
+
+    if [ "$CERTBOT_FAILED" == "yes" ]; then
+        msg="Generation failed for $LE_DOMAINS"
+        say "ERROR: $msg"
+        echo "[$(date +%F %T)] FAILURE (mode=$CERT_MODE, domains: $LE_DOMAINS )" >> $LETSENCRYPT_FAILURES_LOG_FILE
+    fi
 
 	say "Stopping nginx"
 	kill -TERM $(cat /var/run/nginx.pid) 
@@ -256,6 +293,9 @@ else
 	done
 
 	say "Nginx stopped"
+        
+
+    if [ "$CERTBOT_FAILED" == "yes"]; then maybe_failover_to_snakeoil ; fi
 
 fi
 
@@ -265,7 +305,9 @@ enable_certs_mode
 nginx -t
 
 say "Clean up environment"
-unset CERT_NAME SSL_CERTPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS
+unset CERT_NAME SSL_CERTPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS \
+      SNAKEOIL_COMPANY_DEPT SNAKEOIL_COMPANY_NAME SNAKEOIL_COMPANY_CITY SNAKEOIL_COMPANY_COUNTRY \
+      LETSENCRYPT_FAILURE_GRACE_PERIOD LETSENCRYPT_FAILURES_LOG_FILE LETSENCRYPT_FAILOVER_TO_SNAKEOIL
 
 say "Entrypoint is over, passing execution to CMD ($@)"
 exec "$@"

@@ -8,7 +8,13 @@ RUN apt-get update && apt-get install -y certbot gettext-base
 CMD ["nginx", "-g", "daemon off;"]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt /etc/nginx/ssl
-ENV CERT_MODE=staging AUTOFILL_DOMAINS=false
+
+ENV CERT_MODE=staging AUTOFILL_DOMAINS=false \
+    LETSENCRYPT_FAILURE_GRACE_PERIOD=20      \
+    LETSENCRYPT_FAILOVER_TO_SNAKEOIL=yes
+
+ENV SNAKEOIL_COMPANY_NAME=SPECTRE SNAKEOIL_COMPANY_CITY=London SNAKEOIL_COMPANY_COUNTRY=UK \
+    SNAKEOIL_COMPANY_DEPT="Self-signed certificates unit"
 
 RUN sed -i -e '/conf.d/i       ssl_dhparam /etc/nginx/ssl/dhparam.pem ; '  /etc/nginx/nginx.conf
 
