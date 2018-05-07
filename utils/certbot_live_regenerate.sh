@@ -11,16 +11,15 @@ export CERT_NAME="${CERT_NAME:-default}"
 export CERTBOT_WEBROOT=/var/lib/letsencrypt/challenges
 export SSL_CERTPATH=/etc/letsencrypt/live/$CERT_NAME
 
-export LETSENCRYPT_FAILURES_LOG_FILE=/etc/letsencrypt/failures.log
 # if failure was tracked during grace period
 function letsencrypt_failed_recently() {
-    check_file_params $LETSENCRYPT_FAILURES_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
+    check_file_params $LETSENCRYPT_FAILURE_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
 }
  
 if [ "$CERT_MODE" = "snakeoil" ]; then
     echo "Snakeoil mode, doing nothing"
     exit;
-elif [ -e $LETSENCRYPT_FAILURES_LOG_FILE ] || letsencrypt_failed_recently ; then
+elif [ -e $LETSENCRYPT_FAILURE_LOG_FILE ] || letsencrypt_failed_recently ; then
     echo "Letsencrypt failed recently, abstaining from any actions during grace period (${LETSENCRYPT_FAILURE_GRACE_PERIOD} minutes)";
     exit 1;
 fi

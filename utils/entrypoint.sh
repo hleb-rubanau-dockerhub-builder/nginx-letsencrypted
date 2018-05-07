@@ -110,10 +110,9 @@ function deduplicate_list() {
     perl -e ' %seen= {} ; my @result; foreach $elem (@ARGV) { if(!$seen{$elem}){ push @result, $elem; } ; $seen{$elem}=1; }; print join(" ", @result)."\n"; ' $* 
 }
 
-export LETSENCRYPT_FAILURES_LOG_FILE=/etc/letsencrypt/failures.log
 # if failure was tracked during grace period
 function letsencrypt_failed_recently() {
-    check_file_params $LETSENCRYPT_FAILURES_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
+    check_file_params $LETSENCRYPT_FAILURE_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
 }
 
 ORIGINAL_CMD=$0
@@ -248,7 +247,7 @@ CSR
 elif [ ! -w /etc/letsencrypt ]; then
     say "WARNING: /etc/letsencrypt is likely mounted in RO mode, doing nothing with certs"
     maybe_failover_to_snakeoil
-elif [ -e $LETSENCRYPT_FAILURES_LOG_FILE ] && letsencrypt_failed_recently ; then
+elif [ -e $LETSENCRYPT_FAILURE_LOG_FILE ] && letsencrypt_failed_recently ; then
     say "WARNING: letsencrypt recently failed, doing nothing until grace period ($LETSENCRYPT_FAILURE_GRACE_PERIOD minutes) is over"
     maybe_failover_to_snakeoil
 else
@@ -281,7 +280,7 @@ else
     if [ "$CERTBOT_FAILED" == "yes" ]; then
         msg="Generation failed for $LE_DOMAINS"
         say "ERROR: $msg"
-        echo "[$(date +%F %T)] FAILURE (mode=$CERT_MODE, domains: $LE_DOMAINS )" >> $LETSENCRYPT_FAILURES_LOG_FILE
+        echo "[$(date +%F %T)] FAILURE (mode=$CERT_MODE, domains: $LE_DOMAINS )" >> $LETSENCRYPT_FAILURE_LOG_FILE
     fi
 
 	say "Stopping nginx"
@@ -307,7 +306,7 @@ nginx -t
 say "Clean up environment"
 unset CERT_NAME SSL_CERTPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS \
       SNAKEOIL_COMPANY_DEPT SNAKEOIL_COMPANY_NAME SNAKEOIL_COMPANY_CITY SNAKEOIL_COMPANY_COUNTRY \
-      LETSENCRYPT_FAILURE_GRACE_PERIOD LETSENCRYPT_FAILURES_LOG_FILE LETSENCRYPT_FAILOVER_TO_SNAKEOIL
+      LETSENCRYPT_FAILURE_GRACE_PERIOD LETSENCRYPT_FAILURE_LOG_FILE LETSENCRYPT_FAILOVER_TO_SNAKEOIL
 
 say "Entrypoint is over, passing execution to CMD ($@)"
 exec "$@"

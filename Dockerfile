@@ -10,6 +10,7 @@ EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt /etc/nginx/ssl
 
 ENV CERT_MODE=staging AUTOFILL_DOMAINS=false \
+    LETSENCRYPT_FAILURE_LOG_FILE=/var/lib/letsencrypt/failure.log   \
     LETSENCRYPT_FAILURE_GRACE_PERIOD=20      \
     LETSENCRYPT_FAILOVER_TO_SNAKEOIL=yes
 
