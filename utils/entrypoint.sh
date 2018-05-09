@@ -280,7 +280,7 @@ else
     if [ "$CERTBOT_FAILED" == "yes" ]; then
         msg="Generation failed for $LE_DOMAINS"
         say "ERROR: $msg"
-        echo "[$(date +%F %T)] FAILURE (mode=$CERT_MODE, domains: $LE_DOMAINS )" >> $LETSENCRYPT_FAILURE_LOG_FILE
+        echo "[$(date +%F-%T)] FAILURE (mode=$CERT_MODE, domains: $LE_DOMAINS )" >> $LETSENCRYPT_FAILURE_LOG_FILE
     fi
 
 	say "Stopping nginx"
@@ -294,7 +294,7 @@ else
 	say "Nginx stopped"
         
 
-    if [ "$CERTBOT_FAILED" == "yes"]; then maybe_failover_to_snakeoil ; fi
+    if [ "$CERTBOT_FAILED" == "yes" ]; then maybe_failover_to_snakeoil ; fi
 
 fi
 
@@ -308,5 +308,13 @@ unset CERT_NAME SSL_CERTPATH DOMAIN_OPTS CERTBOT_WEBROOT LE_MAIL LE_DOMAINS \
       SNAKEOIL_COMPANY_DEPT SNAKEOIL_COMPANY_NAME SNAKEOIL_COMPANY_CITY SNAKEOIL_COMPANY_COUNTRY \
       LETSENCRYPT_FAILURE_GRACE_PERIOD LETSENCRYPT_FAILURE_LOG_FILE LETSENCRYPT_FAILOVER_TO_SNAKEOIL
 
+set -x
 say "Entrypoint is over, passing execution to CMD ($@)"
-exec "$@"
+if [ "$@" = "nginx -g \"daemon off;\"" ]; then
+    # for some reason interpolation of quotes did not work correctly
+    say "Running nginx command explicitly"
+    exec "nginx -g 'daemon off;'"
+else
+    say "Running CMD"
+    exec $@
+fi

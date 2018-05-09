@@ -5,7 +5,7 @@ MAINTAINER Hleb Rubanau <g.rubanau@gmail.com>
 RUN apt-get update && apt-get install -y certbot gettext-base
 
 # see https://github.com/moby/moby/issues/19611
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["nginx", "-g" , "daemon off;"]
 EXPOSE 80 443
 VOLUME /etc/letsencrypt /var/lib/letsencrypt /etc/nginx/ssl
 
