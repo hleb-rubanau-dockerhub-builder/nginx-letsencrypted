@@ -101,7 +101,7 @@ function initialize_dhparam_pem() {
 }
 
 function get_domains_from_configs() {
-	grep server_name /etc/nginx/conf.d/* | cut -f2 -d: \
+	( grep server_name /etc/nginx/conf.d/* || true ) | cut -f2 -d: \
 		| sed -e 's/;//g' -e 's/server_name//g' -e 's/\s+/ /g' \
 		| tr ' ' '\n' | grep -v '^$' | grep -v '*.' | sort | uniq
 }
@@ -115,14 +115,17 @@ function letsencrypt_failed_recently() {
     check_file_params $LETSENCRYPT_FAILURE_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
 }
 
+
 ORIGINAL_CMD=$0
-ORIGINAL_PARAMS=$@
+ORIGINAL_PARAMS="$@"
 
 function maybe_failover_to_snakeoil() {
     if [ "$LETSENCRYPT_FAILOVER_TO_SNAKEOIL" == "yes" ] || [ "$LETSENCRYPT_FAILOVER_TO_SNAKEOIL" == "true" ]; then
         if [ "$CERT_MODE" != "snakeoil" ]; then
             say "WARNING: forcibly switching from $CERT_MODE to snakeoil mode"
             export CERT_MODE=snakeoil
+            set -x
+            say "DEBUG: original_params=$ORIGINAL_PARAMS"
             exec $ORIGINAL_CMD $ORIGINAL_PARAMS
         fi
     fi
