@@ -38,6 +38,8 @@ LE_DOMAINS="$( get_domains_list.sh )"
 say "Full domains list [AUTOFILL_DOMAINS=${AUTOFILL_DOMAINS:-false}]: $LE_DOMAINS"
 
 export CERT_MODE=${CERT_MODE:-staging}
+source /usr/local/bin/determine_cert_paths
+
 export CERT_NAME="${CERT_NAME:-default}"
 
 do_checks_and_configure_certmode 

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e 
+set -o pipefail
+
+source /usr/local/share/helper_functions.sh
+
+export CERT_NAME=${CERT_NAME:-default}
+export SSL_CERTPATH=/etc/letsencrypt/live/$CERT_NAME
+export CERTBOT_FLAGS="$( get_certbot_flags.sh ) --cert-name $CERT_NAME --expand"
+
+provision_renewal_script $CERT_MODE
+
+tweak_nginx_configs \
+    deploy_ssl_configs  \
+    enable_ssl_stapling \
+    enable_dhparam
+
+initialize_dhparam_pem
+mkdir -p $CERTBOT_WEBROOT
+
+if [ ! -e $SSL_CERTPATH ]; then
+    if [ ! -w /etc/letsencrypt ]; then
+        say "WARNING: directory $SSL_CERTPATH is not writable, and no certificate exists"
+    fi

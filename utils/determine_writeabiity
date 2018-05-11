@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+source /usr/local/share/helper_functions.sh
+source $(dirname $BASH_SOURCE[0])/determine_cert_paths
+
+function report_ssl_writeability() {
+    report_vars SSL_FILES_ARE_PRESENT SSL_FILES_ARE_WRITABLE
+}
+
+# both files exist
+if [ -e $SSL_CERT_PEMFILE ] && [ -e $SSL_CERT_KEYFILE ]; then
+    export SSL_FILES_ARE_PRESENT="true"
+
+    if [ -w "$SSL_CERT_PEMFILE" ] && [ -w "$SSL_CERT_KEYFILE" ]; then
+        export SSL_FILES_ARE_WRITABLE="true"
+    else
+        export SSL_FILES_ARE_WRITABLE="false"
+    fi
+
+else
+    export SSL_FILES_ARE_PRESENT="false"
+
+    SSL_FILES_ARE_WRITABLE="true"
+    # inspect in details to ensure that either all files or their respectively existing ancestor dirs are writable
+    for target_file in $SSL_CERT_PEMFILE $SSL_CERT_KEYFILE ; do
+        if [ -e $target_file ]; then
+            if [ ! -w $target_file ]; then 
+                SSL_FILES_ARE_WRITABLE="false"
+                break;
+            fi
+        else
+            parentdir=$( dirname $target_file ) 
+            while [ ! -z "$parentdir" ]; do
+                if [ -e "$parentdir" ]; then
+                    if [ ! -w "$parentdir" ]; then
+                        SSL_FILES_ARE_WRITABLE="false"
+                    fi
+                    break;
+                else 
+                    parentdir=$(dirname $parentdir) 
+                fi
+            done
+        fi
+    done
+    export SSL_FILES_ARE_WRITABLE
+fi
+
+
+# shortcut for debugging
+if [ "$0" = "$BASH_SOURCE[0]" ]; then
+   report_ssl_vars
+fi

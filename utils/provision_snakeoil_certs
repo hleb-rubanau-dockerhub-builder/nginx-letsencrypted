@@ -1,0 +1,17 @@
+#!/bin/bash
+
+set -e 
+set -o pipefail
+
+source /usr/local/share/helper_functions.sh
+
+export CERT_MODE='snakeoil'
+source /usr/local/bin/determine_cert_paths
+
+provision_renewal_script $CERT_MODE
+tweak_nginx_configs \
+    deploy_ssl_configs  \
+    disable_ssl_stapling  \
+    disable_dhparam
+    
+ssl_generate_snakeoil.sh $PRIMARY_DOMAIN $LE_DOMAINS
