@@ -9,29 +9,6 @@ function letsencrypt_failed_recently() {
     [ -e $LETSENCRYPT_FAILURE_LOG_FILE ] && check_file_params $LETSENCRYPT_FAILURE_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
 }
 
-function do_checks_and_configure_certmode() {
-    # some early faiover checks
-    if [ "$CERT_MODE" != "snakeoil" ]; then
-        if [ ! -w /etc/letsencrypt ]; then
-            say "WARNING: /etc/letsencrypt is likely mounted in RO mode, doing nothing with certs"
-            LETSENCRYPT_NEEDS_FAILOVER="yes"
-        elif [ -e $LETSENCRYPT_FAILURE_LOG_FILE ] && letsencrypt_failed_recently ; then
-            say "WARNING: letsencrypt recently failed, doing nothing until grace period ($LETSENCRYPT_FAILURE_GRACE_PERIOD minutes) is over"
-            LETSENCRYPT_NEEDS_FAILOVER="yes"
-        elif [ -z "$LE_EMAIL" ]; then
-            say "WARNING: letsencrypt mail is not configured"
-            LETSENCRYPT_NEEDS_FAILOVER="yes"
-        fi
-
-        if [ "$LETSENCRYPT_NEEDS_FAILOVER" = "yes" ]; then
-            if [ "$LETSENCRYPT_FAILOVER_TO_SNAKEOIL" = "yes" ] || [ "$LETSENCRYPT_FAILOVER_TO_SNAKEOIL" = "true" ]; then
-                say "WARNING: temporary forcing snakeoil mode due to previous warnings"
-                export CERT_MODE="snakeoil"
-            fi 
-        fi
-    fi
-}
-
 require_var PRIMARY_DOMAIN
 
 LE_DOMAINS="$( get_domains_list.sh )"
@@ -39,10 +16,11 @@ say "Full domains list [AUTOFILL_DOMAINS=${AUTOFILL_DOMAINS:-false}]: $LE_DOMAIN
 
 export CERT_MODE=${CERT_MODE:-staging}
 source /usr/local/bin/determine_cert_paths
+source /usr/local/bin/determine_writeability
 
-export CERT_NAME="${CERT_NAME:-default}"
 
-do_checks_and_configure_certmode 
+
+
 say "CERT_MODE=$CERT_MODE"
 
 
