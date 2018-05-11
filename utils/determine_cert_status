@@ -29,11 +29,13 @@ elif [ "$SSL_CERT_MODE" = "snakeoil" ] && snakeoil_cert_is_outdated ; then
     export SSL_CERT_STATUS="outdated"
 elif letsencrypt_cert_is_outdated ; then
     export SSL_CERT_STATUS="outdated"
-elif
+else
     export SSL_CERT_STATUS="actual"
 fi
 
 # shortcut for debugging
 if [ "$0" = "$BASH_SOURCE" ]; then
-   report_var SSL_CERT_STATUS
+    report_ssl_vars
+    report_ssl_writeability
+    report_vars SSL_CERT_STATUS
 fi
