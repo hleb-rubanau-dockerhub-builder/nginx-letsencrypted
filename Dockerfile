@@ -29,11 +29,14 @@ ENV SNAKEOIL_COMPANY_NAME=SPECTRE SNAKEOIL_COMPANY_CITY=London SNAKEOIL_COMPANY_
 RUN sed -i -e '/conf.d/i       ssl_dhparam /etc/nginx/ssl/dhparam.pem ; '  /etc/nginx/nginx.conf
 
 ADD utils /usr/local/bin 
-RUN chmod u+x /usr/local/bin/*.sh 
+RUN chmod u+x /usr/local/bin/*.sh \
+    && mv /usr/local/bin/helper_functions.sh /usr/local/share/helper_functions.sh 
+
 # backwards-compatibility with earlier versions
 RUN ln -s /usr/local/bin/reload_nginx.sh ./reload_nginx \
     && ln -s /usr/local/bin/ /opt/nginx-le 
 
 ADD nginx_params /usr/share/nginx/nginx_params
 
-ENTRYPOINT [ "/opt/nginx-le/entrypoint.sh" ]
+ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
+CMD [ "/usr/local/bin/bootstrap.sh" ]
