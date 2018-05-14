@@ -71,6 +71,19 @@ function disable_dhparam() {
    sed -i -e 's/^ssl_dhparam/#ssl_dhparam/' /etc/nginx/nginx.conf 
 }
 
+function force_snakeoil_mode() {
+    deploy_ssl_configs
+    disable_ssl_stapling
+    disable_dhparam
+}
+
+function force_letsencrypt_mode() {
+    initialize_dhparam_pem  # external script
+    deploy_ssl_configs
+    enable_ssl_stapling
+    enable_dhparam
+}
+
 subcommands=$*
 
 for subcommand in $subcommands ; do

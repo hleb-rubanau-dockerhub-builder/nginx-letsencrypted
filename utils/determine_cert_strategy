@@ -1,0 +1,59 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+source /usr/local/share/helper_functions.sh
+source $(dirname $BASH_SOURCE[0])/determine_cert_status
+
+# if failure was tracked during grace period
+function letsencrypt_failed_recently() {
+    [ -e $LETSENCRYPT_FAILURE_LOG_FILE ] && check_file_params $LETSENCRYPT_FAILURE_LOG_FILE -mmin -${LETSENCRYPT_FAILURE_GRACE_PERIOD}
+}
+
+function report_ssl_cert_strategy() {
+    report_ssl_cert_status
+    report_vars SSL_CERT_DESIRED_STRATEGY SSL_CERT_ACCEPTED_STRATEGY
+}
+
+case "$SSL_CERT_STATUS" in 
+    actual)
+        export SSL_CERT_DESIRED_STRATEGY="proceed"
+    outdated)
+        export SSL_CERT_DESIRED_STRATEGY="renew"
+        ;;
+    missing)
+        export SSL_CERT_DESIRED_STRATEGY="generate" 
+        ;;
+    desynced)   
+        export SSL_CERT_DESIRED_STRATEGY="generate"
+        ;;
+    *)
+        die "Unsupported cert status: $SSL_CERT_STATUS"
+        ;;
+esac
+
+
+if [ "$SSL_CERT_DESIRED_STRATEGY" != "proceed" ]; then
+    if [ "$SSL_FILES_ARE_WRITEABLE" != "true" ]; then
+        say "WARNING: some files are not writeable, although desired strategy is $SSL_CERT_DESIRED_STRATEGY"
+        export SSL_CERT_ACCEPTED_STRATEGY="fail"
+    elif [ "$SSL_CERT_CERT_MODE" != "snakeoil" ]; then
+        if [ "$SSL_CERT_DESIRED_STRATEGY" == "generate" ] && [ -z "$LE_EMAIL" ]; then
+            say "WARNING: LE_EMAIL is missing, could not generate letsencrypt certificates"
+            export SSL_CERT_ACCEPTED_STRATEGY="fail"
+        elif letsencrypt_failed_recently ; then
+            say "WARNING: Letsencrypt failed recently, abstaining from action $SSL_CERT_DESIRED_STRATEGY"
+            export SSL_CERT_ACCEPTED_STRATEGY="fail"
+        fi
+    fi
+fi
+
+if [ -z "$SSL_CERT_ACCEPTED_STRATEGY" ]; then
+    export SSL_CERT_ACCEPTED_STRATEGY=$SSL_CERT_DESIRED_STRATEGY
+fi
+
+
+# shortcut for debugging
+if [ "$0" = "$BASH_SOURCE" ]; then
+    report_ssl_cert_strategy
+fi

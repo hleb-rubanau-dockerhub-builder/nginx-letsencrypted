@@ -5,21 +5,51 @@ set -o pipefail
 
 source /usr/local/share/helper_functions.sh
 
-export CERT_NAME=${CERT_NAME:-default}
-export SSL_CERTPATH=/etc/letsencrypt/live/$CERT_NAME
+export SSL_CERT_MODE='snakeoil'
+source $(dirname $BASH_SOURCE[0])/determine_cert_paths
+
+PRIMARY_DOMAIN=$1
+shift
+# reformat remaining arguments list into comma-separated with DNS: prefix
+REQUESTED_DOMAINS_LIST="$*"
+DOMAINS_LIST=""
+for domain in $REQUESTED_DOMAINS_LIST ; do DOMAINS_LIST="$DOMAINS_LIST -d $domain" ; done
+
+require_vars PRIMARY_DOMAIN LE_EMAIL
 export CERTBOT_FLAGS="$( get_certbot_flags.sh ) --cert-name $CERT_NAME --expand"
+       
+# we assume nginx is NOT running, and may want to run it in a special mode
+if [ "$SSL_CERT_STATUS" = "missing" ]; then 
+    tweak_nginx_configs enforce_webroot_only_mode
+fi    
 
-provision_renewal_script $CERT_MODE
+# TODO: survive if nginx is already running
+say "Running nginx in background"
+nginx
 
-tweak_nginx_configs \
-    deploy_ssl_configs  \
-    enable_ssl_stapling \
-    enable_dhparam
+say "Calling certbot"
+certbot certonly $CERTBOT_FLAGS \
+    --agree-tos -m $LE_EMAIL \
+    --webroot -w $CERTBOT_WEBROOT \
+    $DOMAINS_LIST   \
+|| CERTBOT_FAILED="yes"
+    
+if [ "$CERTBOT_FAILED" == "yes" ]; then
+    msg="Generation failed for $LE_DOMAINS"
+    say "ERROR: $msg"
+    echo "[$(date +%F-%T)] FAILURE (mode=$CERT_MODE, domains: $LE_DOMAINS )" >> $LETSENCRYPT_FAILURE_LOG_FILE
+fi
 
-initialize_dhparam_pem
-mkdir -p $CERTBOT_WEBROOT
+tweak_nginx enable_certs_mode
+	
+say "Stopping nginx"
+kill -TERM $(cat /var/run/nginx.pid) 
+#nginx -s stop
+while [ -f /var/run/nginx.pid ]; do
+  say "Waiting for nginx to shut down"
+  sleep 2;
+done
 
-if [ ! -e $SSL_CERTPATH ]; then
-    if [ ! -w /etc/letsencrypt ]; then
-        say "WARNING: directory $SSL_CERTPATH is not writable, and no certificate exists"
-    fi
+say "Nginx stopped"
+
+if [ "$CERTBOT_FAILED" == "yes" ]; then die "Letsencrypt generation failed" ; fi

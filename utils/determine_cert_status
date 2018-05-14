@@ -39,28 +39,8 @@ else
     export SSL_CERT_STATUS="actual"
 fi
 
-# now in the same script define strategy
-if [ "$SSL_CERT_STATUS" = "actual" ]; then
-    export SSL_CERT_STRATEGY="proceed"
-elif [ "$SSL_FILES_ARE_WRITEABLE"="true" ]; then
-    case "$SSL_CERT_STATUS" in 
-        outdated)
-            export SSL_CERT_STRATEGY="renew"
-            ;;
-        missing)
-            export SSL_CERT_STRATEGY="generate" 
-            ;;
-        desynced)   
-            export SSL_CERT_STRATEGY="generate"
-            ;;
-        *)
-            die "Unsupported cert status: $SSL_CERT_STATUS"
-            ;;
-    esac
-else
-    # most controversial case -- status is not actual, but certs cannot be regenerated 
+# TODO: analyze domains list and mark certificate as desynced if it does not match desired domains (although it may involve grace period)
 
-fi
 
 # shortcut for debugging
 if [ "$0" = "$BASH_SOURCE" ]; then
