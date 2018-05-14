@@ -14,15 +14,40 @@ require_var PRIMARY_DOMAIN
 LE_DOMAINS="$( get_domains_list.sh )"
 say "Full domains list [AUTOFILL_DOMAINS=${AUTOFILL_DOMAINS:-false}]: $LE_DOMAINS"
 
-export CERT_MODE=${CERT_MODE:-staging}
+export SSL_CERT_MODE=${SSL_CERT_MODE:-staging}
 source /usr/local/bin/determine_cert_paths
-source /usr/local/bin/determine_writeability
+source /usr/local/bin/determine_cert_writeability
+source /usr/local/bin/determine_cert_status
+
+report_ssl_cert_status
+
+if [ "$SSL_CERT_STATUS" != "actual" ]; then
+    if [ "$SSL_FILES_ARE_WRITABLE" != "true" ]; then
+        say "WARNING: certificates status is $SSL_CERT_STATUS , but certificates are not writable" 
+        if [ "$SSL_CERT_MODE" != "snakeoil" ] && [ "$SSL_ALLOW_FAILOVER_TO_SNAKEOIL" == "true" ]; then
+            say "WARNING: trying snakeoil failover"
+            export SSL_CERT_MODE=snakeoil
+            exec $0 $*
+        fi
+
+        if [ "$SSL_CERT_STATUS" != "missing" ] && [ "$SSL_ALLOW_OUTDATED_CERTIFICATES" == "true" ]; then
+            say "WARNING: proceeding with"
+        fi
+
+    fi
+fi
 
 
+case "$SSL_CERT_STATUS" in 
+    missing) 
+    ;;
+    outdated
 
+[ "$SSL_CERT_STATUS" ]
+## now we need to make decisions
+if [ "$SSL_FILES_ARE_PRESENT"!="true" ]; then
 
-say "CERT_MODE=$CERT_MODE"
-
+fi
 
 if [ "$CERT_MODE" = "snakeoil" ]; then
     provision_snakeoil_certs $PRIMARY_DOMAIN $LE_DOMAINS

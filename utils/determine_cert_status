@@ -22,6 +22,12 @@ function letsencrypt_cert_is_outdated() {
     check_file_params $SSL_CERT_PEMFILE -mtime +55
 }
 
+function report_ssl_cert_status() {
+    report_ssl_vars
+    report_ssl_writeability
+    report_vars SSL_CERT_STATUS
+}
+
 
 if [ "$SSL_FILES_ARE_PRESENT" != "true" ]; then
     export SSL_CERT_STATUS="missing"
@@ -33,9 +39,30 @@ else
     export SSL_CERT_STATUS="actual"
 fi
 
+# now in the same script define strategy
+if [ "$SSL_CERT_STATUS" = "actual" ]; then
+    export SSL_CERT_STRATEGY="proceed"
+elif [ "$SSL_FILES_ARE_WRITEABLE"="true" ]; then
+    case "$SSL_CERT_STATUS" in 
+        outdated)
+            export SSL_CERT_STRATEGY="renew"
+            ;;
+        missing)
+            export SSL_CERT_STRATEGY="generate" 
+            ;;
+        desynced)   
+            export SSL_CERT_STRATEGY="generate"
+            ;;
+        *)
+            die "Unsupported cert status: $SSL_CERT_STATUS"
+            ;;
+    esac
+else
+    # most controversial case -- status is not actual, but certs cannot be regenerated 
+
+fi
+
 # shortcut for debugging
 if [ "$0" = "$BASH_SOURCE" ]; then
-    report_ssl_vars
-    report_ssl_writeability
-    report_vars SSL_CERT_STATUS
+    report_ssl_cert_status
 fi
