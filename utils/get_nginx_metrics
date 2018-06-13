@@ -1,0 +1,10 @@
+#!/bin/bash
+
+function nginx_output_to_plain_text() {
+  grep -A3  'Active conn' | grep -v 'server accepts handled requests' | tr -d '\n' | sed -r -e 's/[^0-9 ]//g' -e 's/\s+/ /g' -e 's/^\s*//g' 
+}
+
+STATLINE=$( curl -s http://localhost | nginx_output_to_plain_text )
+STATS=( $STATLINE )
+
+echo "METRICS: @ { 'active': ${STATS[0]}, 'accepts': ${STATS[1]}, 'handled': ${STATS[2]} , 'requests' : ${STATS[3]}, 'reading': ${STATS[4]}, 'writing': ${STATS[5]}, 'waiting': ${STATS[6]} }"
