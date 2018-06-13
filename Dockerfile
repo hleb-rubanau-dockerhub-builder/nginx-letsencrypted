@@ -43,7 +43,11 @@ ENV CERT_MODE=staging AUTOFILL_DOMAINS=false \
 ENV SNAKEOIL_COMPANY_NAME=SPECTRE SNAKEOIL_COMPANY_CITY=London SNAKEOIL_COMPANY_COUNTRY=UK \
     SNAKEOIL_COMPANY_DEPT="Self-signed certificates unit"
 
-RUN sed -i -e '/conf.d/i       ssl_dhparam /etc/nginx/ssl/dhparam.pem ; '  /etc/nginx/nginx.conf
+COPY metrics_collection.conf /etc/nginx/metrics_collection.conf 
+
+RUN sed -i -e '/conf.d/i       ssl_dhparam /etc/nginx/ssl/dhparam.pem ; ' \
+           -e '/conf.d/i       include  /etc/nginx/metrics_collection.conf ; ' \
+           /etc/nginx/nginx.conf 
 
 ADD utils /usr/local/bin 
 RUN chmod u+x /usr/local/bin/* /usr/local/bin/supervisord/* \
