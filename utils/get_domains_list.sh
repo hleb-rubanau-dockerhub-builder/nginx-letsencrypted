@@ -9,7 +9,7 @@ function get_domains_from_configs() {
 }
 
 function deduplicate_list() {
-    perl -e ' %seen= {} ; my @result; foreach $elem (@ARGV) { if(!$seen{$elem}){ push @result, $elem; } ; $seen{$elem}=1; }; print join(" ", @result)."\n"; ' $* 
+    perl -e ' %seen= {} ; my @result; foreach $elem (@ARGV) { if(!$seen{lc $elem}){ push @result, lc $elem; } ; $seen{lc $elem}=1; }; print join(" ", @result)."\n"; ' $* 
 }
 
 if [ "$AUTOFILL_DOMAINS" = "true" ]; then
@@ -27,7 +27,7 @@ fi
 if [ ! -z "$EXTRA_DOMAINS" ]; then
   LE_DOMAINS=$( deduplicate_list $PRIMARY_DOMAIN $EXTRA_DOMAINS )
 else 
-  LE_DOMAINS=$PRIMARY_DOMAIN
+  LE_DOMAINS=$( echo "$PRIMARY_DOMAIN" | tr '[:upper:]' '[:lower:]' )
 fi
 
 echo "$LE_DOMAINS"
