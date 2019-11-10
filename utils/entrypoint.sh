@@ -12,6 +12,10 @@ mkdir -p /mnt/data/watchers
 
 mkdir -p $CERTBOT_WEBROOT
 
+if [ ! -z "${NGINX_USER_UID}" ] ; then 
+    usermod -u $NGINX_USER_UID nginx
+fi 
+
 mv /var/log/supervisor /tmp/supervisor_logs && ln -sf /tmp/supervisor_logs /var/log/supervisor 
 echo '' > /var/run/docker_stderr 
 
