@@ -5,7 +5,7 @@ function get_domains_from_configs() {
         | egrep -v '^\s+#'  \
         | cut -f2 -d: \
 		| sed -e 's/;//g' -e 's/server_name//g' -e 's/\s+/ /g' \
-		| tr ' ' '\n' | egrep -v '^_?$' | grep -v '*.' | sort | uniq
+		| tr ' ' '\n' | egrep -v '^[\s_]*$' | grep -v '*.' | sort | uniq
 }
 
 function deduplicate_list() {

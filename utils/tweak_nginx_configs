@@ -35,7 +35,7 @@ function deploy_ssl_configs() {
 
     for config_endpoint in $CONFIG_ENDPOINTS ; do
        mv /etc/nginx/$config_endpoint $( path_to_ssl_enabled_config $config_endpoint )
-       ln -sf /etc/nginx/acme_webroot_params $( path_to_ssl_disabled_config $config_endpoint )
+       ln -sf /etc/nginx/ssl_disabled_params $( path_to_ssl_disabled_config $config_endpoint )
     done
 }
 
