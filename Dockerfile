@@ -63,3 +63,7 @@ COPY supervisord.conf /etc/supervisor/conf.d
 
 ENTRYPOINT [ "/usr/local/bin/entrypoint.sh" ]
 CMD [ "/usr/local/bin/bootstrap.sh" ]
+
+# add vts module
+RUN curl -sL https://gitlab.com/Rubanau/cloud-tools/raw/master/build_nginx_vts_module_debian.sh | /bin/bash
+RUN sed -i -e "1s|^|load_module modules/ngx_http_vhost_traffic_status_module.so;\n|" /etc/nginx/nginx.conf
