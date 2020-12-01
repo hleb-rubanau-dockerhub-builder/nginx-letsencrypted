@@ -1,4 +1,4 @@
-FROM nginx:latest
+FROM nginx:1.19.5
 
 MAINTAINER Hleb Rubanau <g.rubanau@gmail.com>
 
